@@ -1,37 +1,26 @@
-const express = require('express')
+const express = require('express');
 const app = express();
 const cors = require('cors');
-const port = 3003
+const port = 3003;
 const Stripe = require("stripe");
 const dotenv = require('dotenv');
 const mongoose = require('mongoose');
 const stripeRouter = require("./routes/stripe");
 const bodyParser = require('body-parser');
-const Order = require('./models/orders')
+const Order = require('./models/orders');
 
-
-dotenv.config()
+dotenv.config();
 
 const stripe = Stripe(process.env.STRIPE_SECRET);
 mongoose.connect(process.env.MONGO_URL).then(() => console.log("db connected")).catch((err) => console.log(err));
 
+const endpointSecret = "whsec_IOH8qpPLPvvHgGtnpndcaeaPQmGjZLXv";
 
+app.use(cors());
+app.use(express.json());
 
-
-
-
-
-// const endpointSecret = "whsec_IOH8qpPLPvvHgGtnpndcaeaPQmGjZLXv";
-const endpointSecret = "whsec_1bbc330f7a938051d15d8b19ef3b933928aed6b4a90a976c04d546db10bb919e";
-
-
-
-app.post('/webhook', express.raw({ type: 'application/json' }), (request, response) => {
-  // const sig = request.headers['stripe-signature'];
-  const sig = stripe.webhooks.generateTestHeaderString({
-    payload: JSON.stringify(request.body),
-    secret: endpointSecret,
-  });
+app.post('/webhook', bodyParser.raw({ type: 'application/json' }), (request, response) => {
+  const sig = request.headers['stripe-signature'];
   let event;
 
   try {
@@ -40,26 +29,21 @@ app.post('/webhook', express.raw({ type: 'application/json' }), (request, respon
     response.status(400).send(`Webhook Error: ${err.message}`);
     return;
   }
- 
-
 
   // Handle the event
-  console.log("checking event type : ",event.type)
+  console.log("Checking event type: ", event.type);
   switch (event.type) {
     case 'payment_intent.succeeded':
-       paymentIntentSucceeded = event.data.object;
-      // console.log(paymentIntentSucceeded);
+      console.log("Payment Intent Succeeded");
       break;
 
     case 'checkout.session.completed':
-      const checkoutData = event.data.object;
       console.log("Session Completed");
-      stripe.customers
-        .retrieve(checkoutData.customer)
+      const checkoutData = event.data.object;
+      stripe.customers.retrieve(checkoutData.customer)
         .then(async (customer) => {
           try {
             const data = JSON.parse(customer.metadata.cart);
-             
             const products = data.map((item) => {
               return {
                 productId: item.id,
@@ -68,14 +52,14 @@ app.post('/webhook', express.raw({ type: 'application/json' }), (request, respon
             });
 
             console.log(products[0].supplier);
-            
+
             const newOrder = new Order({
               userId: customer.metadata.userId,
               customerId: checkoutData.customer,
               productId: products[0].productId,
               quantity: products[0].quantity,
-              subtotal: checkoutData.amount_subtotal/100,
-              total: checkoutData.amount_total/100,
+              subtotal: checkoutData.amount_subtotal / 100,
+              total: checkoutData.amount_total / 100,
               payment_status: checkoutData.payment_status,
             });
 
@@ -83,13 +67,13 @@ app.post('/webhook', express.raw({ type: 'application/json' }), (request, respon
               await newOrder.save();
               console.log("Order processed");
             } catch (err) {
-              console.log(err);
+              console.log("Error saving order:", err);
             }
           } catch (err) {
-            console.log(err);
+            console.log("Error parsing customer metadata:", err);
           }
         })
-        .catch((err) => console.log(err.message));
+        .catch((err) => console.log("Error retrieving customer:", err.message));
       break;
 
     default:
@@ -100,9 +84,6 @@ app.post('/webhook', express.raw({ type: 'application/json' }), (request, respon
   response.send();
 });
 
-app.use(bodyParser.json({ limit: '10mb' }));
-app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
-
 app.use("/stripe", stripeRouter);
 
-app.listen(process.env.PORT || port, () => console.log(`App listening on port ${process.env.PORT}!`))
+app.listen(process.env.PORT || port, () => console.log(`App listening on port ${process.env.PORT || port}!`));
