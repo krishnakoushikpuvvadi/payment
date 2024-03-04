@@ -39,7 +39,7 @@ router.post("/create-checkout-session", async (req, res) => {
   const line_items = req.body.cartItems.map((item) => {
     return {
       price_data: {
-        currency: "usd",
+        currency: "inr",
         product_data: {
           name: item.name,
           imageUrl: item.image,
@@ -63,8 +63,8 @@ router.post("/create-checkout-session", async (req, res) => {
     line_items,
     mode: "payment",
     customer: customer.id,
-    success_url: "https://payment-production-7bb2.up.railway.app//stripe/checkout-success",
-    cancel_url:  "https://payment-production-7bb2.up.railway.app//stripe/cancel",
+    success_url: "https://payment-production-7bb2.up.railway.app/stripe/checkout-success",
+    cancel_url:  "https://payment-production-7bb2.up.railway.app/stripe/cancel",
   });
 
   // res.redirect(303, session.url);
