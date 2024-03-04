@@ -21,7 +21,8 @@ mongoose.connect(process.env.MONGO_URL).then(() => console.log("db connected")).
 
 
 
-const endpointSecret = "whsec_IOH8qpPLPvvHgGtnpndcaeaPQmGjZLXv";
+// const endpointSecret = "whsec_IOH8qpPLPvvHgGtnpndcaeaPQmGjZLXv";
+const endpointSecret = "whsec_1bbc330f7a938051d15d8b19ef3b933928aed6b4a90a976c04d546db10bb919e";
 
 
 
@@ -40,6 +41,7 @@ app.post('/webhook', express.raw({ type: 'application/json' }), (request, respon
 
 
   // Handle the event
+  console.log("checking event type : ",event.type)
   switch (event.type) {
     case 'payment_intent.succeeded':
        paymentIntentSucceeded = event.data.object;
