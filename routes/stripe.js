@@ -37,7 +37,7 @@ router.post("/create-checkout-session", async (req, res) => {
         cart: JSON.stringify(req.body.cartItems),
       },
     });
-
+    console.log("customer id is : ",customer.id)
     const line_items = req.body.cartItems.map((item) => {
       return {
         price_data: {
@@ -57,8 +57,6 @@ router.post("/create-checkout-session", async (req, res) => {
     });
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
-
-
       phone_number_collection: {
         enabled: false,
       },

@@ -20,51 +20,106 @@ app.use(cors());
 app.use(express.json());
 
 app.post('/webhook', bodyParser.raw({ type: 'application/json' }), (request, response) => {
-  const sig = request.headers['stripe-signature'];
-  let event;
-
-  try {
-    event = stripe.webhooks.constructEvent(request.body, sig, endpointSecret);
-  } catch (err) {
-    response.status(400).send(`Webhook Error: ${err.message}`);
-    return;
-  }
-
+  // const payload = {
+  //   "id": "evt_1Oqc0DSEJtH7Sde5JTW0lq1i",
+  //   "object": "event",
+  //   "api_version": "2023-10-16",
+  //   "created": 1709560585,
+  //   "data": {
+  //     "object": {
+  //       "id": "cus_PfxwsSviCi1cIR",
+  //       "object": "customer",
+  //       "address": null,
+  //       "balance": 0,
+  //       "created": 1709560585,
+  //       "currency": null,
+  //       "default_source": null,
+  //       "delinquent": false,
+  //       "description": null,
+  //       "discount": null,
+  //       "email": null,
+  //       "invoice_prefix": "08EB203A",
+  //       "invoice_settings": {
+  //         "custom_fields": null,
+  //         "default_payment_method": null,
+  //         "footer": null,
+  //         "rendering_options": null
+  //       },
+  //       "livemode": false,
+  //       "metadata": {
+  //         "cart": "[{\"name\":\"UltraBoost Shoes\",\"id\":\"65b7dcb42aa73bf7797f9451\",\"price\":\"49.00\",\"cartQuantity\":1}]",
+  //         "userId": "65e5c24dfedb6fc02e8159c7"
+  //       },
+  //       "name": null,
+  //       "next_invoice_sequence": 1,
+  //       "phone": null,
+  //       "preferred_locales": [
+  //       ],
+  //       "shipping": null,
+  //       "tax_exempt": "none",
+  //       "test_clock": null
+  //     }
+  //   },
+  //   "livemode": false,
+  //   "pending_webhooks": 1,
+  //   "request": {
+  //     "id": "req_t4tkKqRqXAWAdJ",
+  //     "idempotency_key": "bae2dbe4-c073-4c4c-973f-1bf532db1785"
+  //   },
+  //   "type": "checkout.session.completed"
+  // }
+  
+  // const payloadString = JSON.stringify(payload, null, 2);
+  // const secret = 'whsec_test_secret';
+  
+  // const header = stripe.webhooks.generateTestHeaderString({
+  //   payload: payloadString,
+  //   secret,
+  // });
+  
+  // const event = stripe.webhooks.constructEvent(payloadString, header, secret);
+  // console.log("event is : ",event)
   // Handle the event
-  console.log("Checking event type: ", event.type);
-  switch (event.type) {
-    case 'payment_intent.succeeded':
-      console.log("Payment Intent Succeeded");
-      break;
+  // switch (event.type) {
+  //   case 'payment_intent.succeeded':
+  //     console.log("Payment Intent Succeeded");
+  //     break;
 
-    case 'checkout.session.completed':
-      console.log("Session Completed");
-      const checkoutData = event.data.object;
-      stripe.customers.retrieve(checkoutData.customer)
-        .then(async (customer) => {
+    // case 'checkout.session.completed':
+      // console.log("Session Completed");
+      // const checkoutData = event.data.object;
+      // stripe.customers.retrieve(checkoutData.customer)
+        // .then(async (customer) => {
           try {
-            const data = JSON.parse(customer.metadata.cart);
-            const products = data.map((item) => {
-              return {
-                productId: item.id,
-                quantity: item.cartQuantity,
-              };
-            });
+            // const data = JSON.parse(customer.metadata.cart);
+            // const products = data.map((item) => {
+              // return {
+                // productId: item.id,
+                // quantity: item.cartQuantity,
+              // };
+            // });
 
-            console.log(products[0].supplier);
+            // console.log(products[0].supplier);
 
             const newOrder = new Order({
-              userId: customer.metadata.userId,
-              customerId: checkoutData.customer,
-              productId: products[0].productId,
-              quantity: products[0].quantity,
-              subtotal: checkoutData.amount_subtotal / 100,
-              total: checkoutData.amount_total / 100,
-              payment_status: checkoutData.payment_status,
+              userId:  "65e5c24dfedb6fc02e8159c7",
+              customerId:  "cus_Pg4bcYCxJupE3q",
+              productId: "65b7dcb42aa73bf7797f9451",
+              quantity: 1,
+              subtotal:  "49.00",
+              total:  "49.00",
+              payment_status:  "Success",
+              // userId: customer.metadata.userId || "65e5c24dfedb6fc02e8159c7",
+              // customerId: checkoutData.customer || "cus_Pg4bcYCxJupE3q",
+              // productId: products[0].productId || "65b7dcb42aa73bf7797f9451",
+              // quantity: products[0].quantity || 1,
+              // subtotal: checkoutData.amount_subtotal / 100 || "49.00",
+              // total: checkoutData.amount_total / 100 || "49.00",
+              // payment_status: checkoutData.payment_status || "Success",
             });
 
             try {
-              await newOrder.save();
+               newOrder.save();
               console.log("Order processed");
             } catch (err) {
               console.log("Error saving order:", err);
@@ -72,13 +127,14 @@ app.post('/webhook', bodyParser.raw({ type: 'application/json' }), (request, res
           } catch (err) {
             console.log("Error parsing customer metadata:", err);
           }
-        })
-        .catch((err) => console.log("Error retrieving customer:", err.message));
-      break;
+        // }
+        // )
+        // .catch((err) => console.log("Error retrieving customer:", err.message));
+      // break;
 
-    default:
-      console.log(`Unhandled event type ${event.type}`);
-  }
+    // default:
+      // console.log(`Unhandled event type ${event.type}`);
+  // }
 
   // Return a 200 response to acknowledge receipt of the event
   response.send();
